@@ -1,102 +1,276 @@
 # TicketFlow
 
-**A hands-on reference project for learning Spring Cloud and microservices, built around a real-world ticket booking platform.**
+**Projet académique de microservices avec Spring Cloud - Une plateforme de réservation de billets d'événements**
 
-TicketFlow is an open-source educational project that takes you from
-"what is a microservice?" to building resilient, event-driven, observable
-distributed systems with the Spring ecosystem.
+Projet développé dans le cadre d'un cours d'architecture microservices, implémentant progressivement les patterns et technologies Spring Cloud.
 
-Instead of yet another e-commerce demo, it tackles problems that naturally
-require distributed-systems patterns: limited seat inventory, concurrent
-bookings, unreliable payment providers, and asynchronous notifications.
+---
 
-## What you will learn
+## 📊 État d'avancement
 
-- **Service discovery & routing**: Eureka and Spring Cloud Gateway
-- **Centralized configuration**: Spring Cloud Config with dynamic refresh
-- **Inter-service communication**: declarative REST clients with OpenFeign
-- **Resilience**: circuit breaker, retry, timeout, bulkhead and fallbacks (Resilience4J)
-- **Event-driven architecture**: asynchronous messaging with Apache Kafka
-- **Distributed transactions**: Saga pattern, Outbox pattern, idempotency
-- **Containerization**: Docker and Docker Compose
-- **AI integration** *(later)*: natural-language search and RAG assistant with Spring AI
-
-## Architecture
-
-| Module | Role | Key technology | Status |
+| TP | Fonctionnalité | Statut | Technologies |
 |---|---|---|---|
-| `customer-service` | Customer profiles (CRUD) | Spring Web, JPA | Done |
-| `api-gateway` | Single entry point, routing, rate limiting | Spring Cloud Gateway | Planned |
-| `discovery-server` | Service registry | Eureka | Planned |
-| `event-service` | Events and seats catalog | Spring Web, JPA | Planned |
-| `config-server` | Centralized configuration | Spring Cloud Config | Planned |
-| `booking-service` | Booking and seat locking | OpenFeign, Resilience4J | Planned |
-| `payment-service` | Simulated payment provider (random failures) | Resilience4J | Planned |
-| `notification-service` | Confirmation emails/SMS | Kafka consumer | Planned |
-| `ai-assistant-service` | Natural-language search, recommendations | Spring AI | Later |
+| **TP0** | Setup & Customer Service | ✅ Terminé | Spring Boot, JPA, H2 |
+| **TP1** | API Gateway | ✅ Terminé | Spring Cloud Gateway |
+| **TP2** | Service Discovery | ✅ Terminé | Eureka Server/Client |
+| **TP3** | Configuration centralisée | ✅ Terminé | Spring Cloud Config + GitHub |
+| **TP4** | Communication inter-services | ✅ Terminé | OpenFeign |
+| **TP5** | Résilience | ✅ Terminé | Resilience4j Circuit Breaker |
 
-## Roadmap
+---
 
-Each step has a Git tag and a lesson in `docs/lessons/`.
+## 🏗️ Architecture actuelle
 
-| Tag | Content |
-|---|---|
-| `step-00-setup` | Parent POM, repo structure, CI |
-| `step-01-customer-service` | First business service |
-| `step-02-gateway-static` | Gateway with static routes |
-| `step-03-discovery` | Eureka + load-balanced routing |
-| `step-04-event-service` | Second business service |
-| `step-05-config` | Config Server |
-| `step-06-booking-feign` | booking-service + OpenFeign |
-| `step-07-resilience` | payment-service + Resilience4J |
-| `step-08-kafka` | Events + notification-service |
-| `step-09-saga` | Saga, Outbox, idempotency |
-| `step-10-security` | Keycloak (customer-service integration) |
-| `step-11-observability` | Tracing and metrics |
-| `step-12-ai` | Spring AI |
+```
+                          ┌─────────────────┐
+                          │   API Gateway   │
+                          │   Port: 8080    │
+                          └────────┬────────┘
+                                   │
+                    ┌──────────────┼──────────────┐
+                    │              │              │
+          ┌─────────▼────────┐ ┌──▼──────────┐ ┌▼─────────────┐
+          │ Customer Service │ │Event Service│ │Booking Service│
+          │   Port: 8081     │ │ Port: 8082  │ │  Port: 8083   │
+          └──────────────────┘ └─────────────┘ └───────┬───────┘
+                                                        │
+                                                   OpenFeign
+                                                  Circuit Breaker
+                                                        
+          ┌────────────────────────────────────────────────────┐
+          │            Discovery Server (Eureka)               │
+          │                 Port: 8761                         │
+          └────────────────────────────────────────────────────┘
+          
+          ┌────────────────────────────────────────────────────┐
+          │          Config Server (GitHub backend)            │
+          │                 Port: 8888                         │
+          └────────────────────────────────────────────────────┘
+```
 
-To follow a lesson, check out its tag: `git checkout step-01-customer-service`.
+---
 
-## Tech stack
+## 📦 Services implémentés
 
-Java 21 · Spring Boot 4 · Spring Cloud 2025.1 · Resilience4J · Apache Kafka ·
-PostgreSQL · Docker / Docker Compose · Spring AI (later)
+### 1. **config-server** (Port 8888)
+Configuration centralisée avec backend GitHub.
+- Repository externe: [`ticketflow-config`](https://github.com/hmirinsalma/ticketflow-config)
+- Refresh dynamique avec `/actuator/refresh`
+- Profiles par environnement
 
-## Repository structure
+### 2. **discovery-server** (Port 8761)
+Service Discovery avec Eureka Server.
+- Interface web: http://localhost:8761
+- Auto-registration des services
+- Health checks automatiques
 
-    ticketflow/
-    ├── docs/            # lessons, ADRs, templates
-    ├── infra/           # docker-compose and infrastructure config
-    ├── config-repo/     # configuration served by the config server
-    └── services/        # one folder per microservice, each with its own README
+### 3. **customer-service** (Port 8081)
+Gestion des clients (CRUD).
+- API REST complète
+- Validation des données
+- Gestion d'erreurs personnalisée
 
-Every module is independently runnable and testable, and documents itself in
-its own `README.md`.
+### 4. **event-service** (Port 8082)
+Catalogue d'événements.
+- Gestion des événements publiés
+- DataLoader avec données de test
+- API REST avec filtres
 
-## Getting started
+### 5. **booking-service** (Port 8083)
+Réservations avec appel à event-service.
+- Communication via OpenFeign
+- Circuit Breaker (Resilience4j)
+- Calcul automatique du prix total
+- Fallback en cas de panne d'event-service
 
-Prerequisites: JDK 21, Maven (or the included wrapper), Docker.
+### 6. **api-gateway** (Port 8080)
+Point d'entrée unique avec routage intelligent.
+- Load Balancing via Eureka
+- Routes configurées pour tous les services
+- Header X-Served-By pour traçabilité
 
-    git clone https://github.com/<your-user>/ticketflow.git
-    cd ticketflow
-    mvn clean verify
+---
 
-## Who is this for?
+## 🚀 Démarrage du projet
 
-Java developers who know Spring Boot basics and want to move into
-microservices, and anyone preparing for backend or architecture interviews.
+### Prérequis
+- Java 21
+- Maven 3.9+
+- Git
 
-<!--
-## Contributing
+### Variables d'environnement
+```bash
+CONFIG_GIT_URI=https://github.com/hmirinsalma/ticketflow-config.git
+```
 
-Contributions, issues and exercises are welcome. A `CONTRIBUTING.md` will be
-added soon.
--->
+### Ordre de démarrage
 
-## License
+**1. Config Server** (obligatoire en premier)
+```bash
+cd services/config-server
+$env:CONFIG_GIT_URI="https://github.com/hmirinsalma/ticketflow-config.git"
+../../mvnw.cmd spring-boot:run
+```
 
-To be defined (MIT recommended for an educational project).
+**2. Discovery Server**
+```bash
+cd services/discovery-server
+../../mvnw.cmd spring-boot:run
+```
 
-## Author
+**3. Services métier** (dans n'importe quel ordre)
+```bash
+# Customer Service
+cd services/customer-service
+../../mvnw.cmd spring-boot:run
 
-**AHAIDOUS Khadija**   | [GitHub](https://github.com/kahaidous>) · [LinkedIn](https://www.linkedin.com/in/khadijaahaidous)
+# Event Service
+cd services/event-service
+../../mvnw.cmd spring-boot:run
+
+# Booking Service
+cd services/booking-service
+../../mvnw.cmd spring-boot:run
+```
+
+**4. API Gateway**
+```bash
+cd services/api-gateway
+../../mvnw.cmd spring-boot:run
+```
+
+### Vérification
+
+- Eureka Dashboard: http://localhost:8761
+- Tous les services doivent être enregistrés et UP
+
+---
+
+## 🧪 Tests fonctionnels
+
+### Via l'API Gateway (recommandé)
+
+**1. Lister les événements**
+```bash
+curl http://localhost:8080/api/v1/events
+```
+
+**2. Créer un customer**
+```bash
+curl -X POST http://localhost:8080/api/customers \
+  -H "Content-Type: application/json" \
+  -d '{"firstName":"Ahmed","lastName":"Bennani","email":"ahmed@example.com","phone":"+212600000000"}'
+```
+
+**3. Créer une réservation**
+```bash
+curl -X POST http://localhost:8080/api/v1/bookings \
+  -H "Content-Type: application/json" \
+  -d '{"customerId":1,"eventId":1,"quantity":2}'
+```
+
+**4. Tester le Circuit Breaker**
+- Arrêter event-service
+- Essayer de créer une réservation → Erreur élégante
+- Après 5+ échecs → Circuit ouvert (réponse immédiate)
+- Redémarrer event-service
+- Après 10 secondes → Circuit refermé
+
+---
+
+## 🛠️ Technologies utilisées
+
+| Catégorie | Technologie | Version |
+|---|---|---|
+| **Framework** | Spring Boot | 4.0.8 |
+| **Cloud** | Spring Cloud | 2025.1.2 |
+| **Java** | OpenJDK | 21 |
+| **Build** | Maven | 3.9+ |
+| **Discovery** | Eureka | 2025.1.2 |
+| **Gateway** | Spring Cloud Gateway | 2025.1.2 |
+| **Config** | Spring Cloud Config | 2025.1.2 |
+| **REST Client** | OpenFeign | 2025.1.2 |
+| **Resilience** | Resilience4j | via Spring Cloud |
+| **Database** | H2 (in-memory) | - |
+
+---
+
+## 📁 Structure du projet
+
+```
+ticketflow/
+├── services/
+│   ├── config-server/          # TP3: Configuration centralisée
+│   ├── discovery-server/       # TP2: Eureka Server
+│   ├── customer-service/       # TP0: Service CRUD
+│   ├── event-service/          # TP4: Catalogue événements
+│   ├── booking-service/        # TP4 + TP5: Réservations + Circuit Breaker
+│   └── api-gateway/            # TP1: Point d'entrée
+├── infra/
+│   └── docker-compose.yml      # (À venir)
+├── pom.xml                     # Parent POM
+└── README.md                   # Ce fichier
+```
+
+---
+
+## 🔗 Repositories liés
+
+- **Code source**: [ticketflow](https://github.com/hmirinsalma/ticketflow)
+- **Configuration**: [ticketflow-config](https://github.com/hmirinsalma/ticketflow-config)
+
+---
+
+## 👥 Équipe
+
+- **Salma Hmirin** - [GitHub](https://github.com/hmirinsalma)
+- Membre 2
+- Membre 3
+
+---
+
+## 📝 Workflow Git
+
+Le projet suit un workflow avec branches feature:
+
+```bash
+# Pour chaque TP
+git checkout -b feature/step-XX-nom
+# ... développement ...
+git commit -m "TPX: description"
+git push origin feature/step-XX-nom
+# Pull Request → Review → Merge dans main
+```
+
+**Pull Requests mergées:**
+- PR #1: TP2 - Service Discovery (Eureka)
+- PR #2: TP3 - Config Server
+- PR #3: TP4 - OpenFeign
+- PR #4: TP5 - Circuit Breaker
+
+---
+
+## 📚 Concepts démontrés
+
+- ✅ Architecture microservices
+- ✅ Service Discovery (pattern Registry)
+- ✅ API Gateway (pattern Gateway)
+- ✅ Configuration externalisée
+- ✅ Load Balancing côté client
+- ✅ Communication synchrone (REST)
+- ✅ Resilience (Circuit Breaker, Fallback)
+- ✅ Observabilité (Actuator)
+
+---
+
+## 🎓 Projet académique
+
+Ce projet a été réalisé dans le cadre d'un cours d'architecture microservices.
+
+**Objectif pédagogique**: Comprendre et implémenter les patterns essentiels des microservices avec Spring Cloud.
+
+---
+
+## 📄 License
+
+Projet académique - Tous droits réservés
