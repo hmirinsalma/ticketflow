@@ -1,8 +1,159 @@
+version: '3.8'
+
 services:
-  customer-service:
-    build:
-      context: ..
-      dockerfile: services/customer-service/Dockerfile
-    container_name: customer-service
+  # ===================================
+  # BASES DE DONNÉES PostgreSQL
+  # ===================================
+  
+  # Base pour Customer Service
+  postgres-customer:
+    image: postgres:15-alpine
+    container_name: ticketflow-postgres-customer
+    restart: unless-stopped
     ports:
-      - "8081:8081"
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: customer_db
+      POSTGRES_USER: ticketflow
+      POSTGRES_PASSWORD: ticketflow123
+    volumes:
+      - postgres-customer-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ticketflow -d customer_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Base pour Event Service
+  postgres-event:
+    image: postgres:15-alpine
+    container_name: ticketflow-postgres-event
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: event_db
+      POSTGRES_USER: ticketflow
+      POSTGRES_PASSWORD: ticketflow123
+    volumes:
+      - postgres-event-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ticketflow -d event_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Base pour Booking Service
+  postgres-booking:
+    image: postgres:15-alpine
+    container_name: ticketflow-postgres-booking
+    restart: unless-stopped
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: booking_db
+      POSTGRES_USER: ticketflow
+      POSTGRES_PASSWORD: ticketflow123
+    volumes:
+      - postgres-booking-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ticketflow -d booking_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Base pour Payment Service (FUTUR)
+  postgres-payment:
+    image: postgres:15-alpine
+    container_name: ticketflow-postgres-payment
+    restart: unless-stopped
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_DB: payment_db
+      POSTGRES_USER: ticketflow
+      POSTGRES_PASSWORD: ticketflow123
+    volumes:
+      - postgres-payment-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ticketflow -d payment_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Base pour Ticket Service (FUTUR)
+  postgres-ticket:
+    image: postgres:15-alpine
+    container_name: ticketflow-postgres-ticket
+    restart: unless-stopped
+    ports:
+      - "5436:5432"
+    environment:
+      POSTGRES_DB: ticket_db
+      POSTGRES_USER: ticketflow
+      POSTGRES_PASSWORD: ticketflow123
+    volumes:
+      - postgres-ticket-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ticketflow -d ticket_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Base pour Notification Service (FUTUR)
+  postgres-notification:
+    image: postgres:15-alpine
+    container_name: ticketflow-postgres-notification
+    restart: unless-stopped
+    ports:
+      - "5437:5432"
+    environment:
+      POSTGRES_DB: notification_db
+      POSTGRES_USER: ticketflow
+      POSTGRES_PASSWORD: ticketflow123
+    volumes:
+      - postgres-notification-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ticketflow -d notification_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===================================
+  # PGADMIN (Interface Web)
+  # ===================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: ticketflow-pgadmin
+    restart: unless-stopped
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@ticketflow.ma
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    depends_on:
+      - postgres-customer
+      - postgres-event
+      - postgres-booking
+
+# ===================================
+# VOLUMES (Persistance)
+# ===================================
+volumes:
+  postgres-customer-data:
+  postgres-event-data:
+  postgres-booking-data:
+  postgres-payment-data:
+  postgres-ticket-data:
+  postgres-notification-data:
+  pgadmin-data:
+
+# ===================================
+# NETWORK
+# ===================================
+networks:
+  default:
+    name: ticketflow-network
