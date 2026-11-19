@@ -221,14 +221,6 @@ ticketflow/
 
 ---
 
-## 👥 Équipe
-
-- **Salma Hmirin** - [GitHub](https://github.com/hmirinsalma)
-- Membre 2
-- Membre 3
-
----
-
 ## 📝 Workflow Git
 
 Le projet suit un workflow avec branches feature:
